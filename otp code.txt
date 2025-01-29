@@ -1,0 +1,200 @@
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:email_auth/email_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'firebase_options.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Shopping App',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: SplashScreen(),
+    );
+  }
+}
+
+// Splash Screen
+class SplashScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    Future.delayed(Duration(seconds: 3), () {
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (context) => LoginScreen()));
+    });
+
+    return Scaffold(
+      backgroundColor: Colors.deepPurple.shade500,
+      body: Center(
+        child: Text(
+          'Shopping App',
+          style: TextStyle(
+              fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white),
+        ),
+      ),
+    );
+  }
+}
+
+// Login Screen
+class LoginScreen extends StatefulWidget {
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  String _email = '';
+  String _password = '';
+
+  Future<User?> _signInWithEmailPassword() async {
+    try {
+      final UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: _email,
+        password: _password,
+      );
+      return userCredential.user;
+    } catch (e) {
+      print('Error signing in: $e');
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.deepPurpleAccent.shade100,
+      body: Center(
+
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Login to Continue',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 20),
+                TextFormField(
+                  decoration: InputDecoration(
+                    labelText: 'Email',
+                    suffixIcon: TextButton(onPressed: () {}, child: Text("Send OTP",style: TextStyle(color: Colors.black),)),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
+                  ),
+                  keyboardType: TextInputType.emailAddress,
+                  onSaved: (value) => _email = value ?? '',
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your email';
+                    }
+                    return null;
+                  },
+                ),
+                SizedBox(height: 10),
+                TextFormField(
+                  decoration: InputDecoration(
+                    labelText: 'OTP',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
+                  ),
+                  obscureText: true,
+                  onSaved: (value) => _password = value ?? '',
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your otp';
+                    }
+                    return null;
+                  },
+                ),
+                SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (_formKey.currentState?.validate() ?? false) {
+                      _formKey.currentState?.save();
+                      final user = await _signInWithEmailPassword();
+                      if (user != null) {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => ProductPage()),
+                        );
+                      }
+                    }
+                  },
+                  child: Text('Verify OTP'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Product Page
+class ProductPage extends StatelessWidget {
+  final List<Map<String, String>> products = [
+    {'name': 'Laptop', 'price': '\$1000'},
+    {'name': 'Phone', 'price': '\$500'},
+    {'name': 'Headphones', 'price': '\$200'},
+    {'name': 'Smart Watch', 'price': '\$150'},
+    {'name': 'TV', 'price': '\$750'},
+    {'name': 'Mouse', 'price': '\$250'},
+    {'name': 'Bluetooth', 'price': '\$550'},
+    {'name': 'Phone', 'price': '\$500'},
+    {'name': 'Headphones', 'price': '\$200'},
+    {'name': 'Smart Watch', 'price': '\$150'},
+    {'name': 'TV', 'price': '\$750'},
+    {'name': 'Mouse', 'price': '\$250'},
+    {'name': 'Bluetooth', 'price': '\$550'},
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Color(0xFF8174A0),
+      appBar: AppBar(
+        backgroundColor: Color(0xFF536493),
+        title: Text('Products'),
+        actions: [
+          IconButton(
+              onPressed: () async {
+                await FirebaseAuth.instance.signOut();
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => LoginScreen()),
+                );
+              },
+              icon: Icon(Icons.logout))
+        ],
+      ),
+      body: ListView.builder(
+        itemCount: products.length,
+        itemBuilder: (context, index) {
+          return Card(
+            margin: EdgeInsets.all(10),
+            child: ListTile(
+              leading: Icon(Icons.shopping_bag),
+              title: Text(products[index]['name']!),
+              subtitle: Text(products[index]['price']!),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
